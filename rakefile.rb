@@ -18,6 +18,7 @@ Rakish::CppProject.new(
     addSourceFiles(
         './Crc32.cpp',
         './ObjLinkedList.cpp',
+        './PrimFormatter.cpp',
         './TimingContext.cpp'
     );
 
