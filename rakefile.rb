@@ -17,6 +17,7 @@ Rakish::CppProject.new(
 
     addSourceFiles(
         './Crc32.cpp',
+        './LambdaEventQueue.cpp',
         './ObjLinkedList.cpp',
         './PrimFormatter.cpp',
         './TimingContext.cpp'
