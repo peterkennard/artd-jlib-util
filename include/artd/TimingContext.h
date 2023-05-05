@@ -7,7 +7,7 @@ ARTD_BEGIN
 
 #define INL ARTD_ALWAYS_INLINE
 
-class ARTD_API_JLIB_UTIL TimingContext
+class /* ARTD_API_JLIB_UTIL */ TimingContext
 {
 public:
 	INL         TimingContext() {}
