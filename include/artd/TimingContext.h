@@ -38,7 +38,7 @@ public:
 	 */
     INL double  lastFrameDt() const { return(elapsedSinceLast_); }
 
-    bool isDebugFRame() const {
+    bool isDebugFrame() const {
         return(debugFrame_);
     }
     
@@ -48,7 +48,7 @@ protected:
 	double  frameTime_;
 	double  lastFrameTime_;
 	double  elapsedSinceLast_;
-    bool debugFrame_ = false;
+    bool    debugFrame_ = false;
 };
 
 #undef INL
