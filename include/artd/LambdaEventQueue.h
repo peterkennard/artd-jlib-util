@@ -25,13 +25,13 @@ private:
         , public DlNode
     {
         friend class LambdaEventQueue;
-        friend class LambdaEventCache;
+        friend class LambdaEventPool;
         
         Lamb f_;
         void* arg_;
         
     public:
-        LambdaEvent(void *&cBlockAt, const Lamb &f, void *arg)
+        LambdaEvent(void *& /*cBlockAt*/, const Lamb &f, void *arg)
             : f_(f) 
             , arg_(arg) 
         {}
@@ -59,17 +59,17 @@ private:
 
 public:
 
-    class ARTD_API_JLIB_UTIL LambdaEventCache
+    class ARTD_API_JLIB_UTIL LambdaEventPool
         : public ObjectBase
     {
         IntrusiveList<DlNode> freeMemory_;
         uint32_t freeCount_;
         uint32_t blockSize_;
     public:
-        LambdaEventCache()
+        LambdaEventPool()
             : freeCount_(0), blockSize_(0)
         {}
-        ~LambdaEventCache();
+        ~LambdaEventPool();
 
         void* allocateBlock(size_t size);
         void releaseBlock(void* block);
@@ -78,7 +78,7 @@ public:
 private:
 
     Mutex listLock_;
-    ObjectPtr<LambdaEventCache> eventCache_;
+    ObjectPtr<LambdaEventPool> eventCache_;
     LambdaEventList queue_;
 
     LambdaEvent* getNewEvent(void* arg, const Lamb& f);
@@ -86,10 +86,10 @@ private:
 
 public:
 
-    LambdaEventQueue() : eventCache_(ObjectBase::make<LambdaEventCache>()) {
+    LambdaEventQueue() : eventCache_(ObjectBase::make<LambdaEventPool>()) {
     }
 
-    LambdaEventQueue(ObjectPtr<LambdaEventCache> cache) : eventCache_(std::move(cache)) {
+    LambdaEventQueue(ObjectPtr<LambdaEventPool> cache) : eventCache_(std::move(cache)) {
     }
     ~LambdaEventQueue() {
     }

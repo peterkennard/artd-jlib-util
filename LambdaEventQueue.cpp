@@ -9,7 +9,7 @@ template<typename T>
 class PooledMessageAllocator
 {
 public:
-    LambdaEventQueue::LambdaEventCache* owner_;
+    LambdaEventQueue::LambdaEventPool* owner_;
     typedef std::size_t size_type;
     typedef std::ptrdiff_t difference_type;
     typedef T* pointer;
@@ -22,10 +22,10 @@ public:
     template<typename U>
     struct rebind { typedef PooledMessageAllocator<U> other; };
 
-    void setOwner(LambdaEventQueue::LambdaEventCache* owner) {
+    void setOwner(LambdaEventQueue::LambdaEventPool* owner) {
         owner_ = owner;
     }
-    PooledMessageAllocator(LambdaEventQueue::LambdaEventCache* owner) noexcept 
+    PooledMessageAllocator(LambdaEventQueue::LambdaEventPool* owner) noexcept
         : owner_(owner) 
     {}
     PooledMessageAllocator() noexcept {}
@@ -60,7 +60,7 @@ public:
 // first so eventually all end up compacted i the first block and later blocks freed
 // anyway some better algorithm.
 
-void* LambdaEventQueue::LambdaEventCache::allocateBlock(size_t size) {
+void* LambdaEventQueue::LambdaEventPool::allocateBlock(size_t size) {
     ObjAllocatorArg* a = ObjAllocatorArg::getArg();
     if (a) {
         void* block = freeMemory_.getTail();
@@ -81,13 +81,13 @@ void* LambdaEventQueue::LambdaEventCache::allocateBlock(size_t size) {
     return(nullptr);  // yes kaboom
 }
 
-void LambdaEventQueue::LambdaEventCache::releaseBlock(void* block) {
+void LambdaEventQueue::LambdaEventPool::releaseBlock(void* block) {
     //    ::operator delete(block);
     ++freeCount_;
     freeMemory_.addHead(new(block) DlNode);
 }
 
-LambdaEventQueue::LambdaEventCache::~LambdaEventCache() {
+LambdaEventQueue::LambdaEventPool::~LambdaEventPool() {
     if (!freeMemory_.empty()) {
         DlNode *e;
         while ((e = freeMemory_.getHead()) != nullptr) {
