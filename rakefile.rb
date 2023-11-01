@@ -20,7 +20,8 @@ Rakish::CppProject.new(
         './LambdaEventQueue.cpp',
         './ObjLinkedList.cpp',
         './PrimFormatter.cpp',
-        './TimingContext.cpp'
+        './TimingContext.cpp',
+        './TypedPropertyMap.cpp'
     );
 
     setupCppConfig :targetType =>'DLL' do |cfg|
