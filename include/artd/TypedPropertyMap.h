@@ -3,6 +3,7 @@
 #include "artd/jlib_util.h"
 #include "artd/ObjectBase.h"
 #include <unordered_map>
+#include "artd/StringArg.h"
 #include "artd/Logger.h"
 
 ARTD_BEGIN
@@ -11,27 +12,44 @@ ARTD_BEGIN
 
 class TypedPropertyMap;
 
+class ARTD_API_JLIB_UTIL DefaultKeyRegistrar {
+public:
+    static int registerTypedKey(StringArg name);
+};
+
+int registerTypedKeyId(const char *name);
+
+
 template<typename T>
 class TypedPropertyKey {
     friend class TypedPropertyMap;
     const int key_;
-    TypedPropertyKey(int key) : key_(key) {}
-//    INL T *cast(void *p) {
-//        return(renterpret_cast<T *>(p));
-//    }
+public:
+    TypedPropertyKey(StringArg name) : key_(DefaultKeyRegistrar::registerTypedKey(name))
+    {}
 };
 
 class ARTD_API_JLIB_UTIL TypedPropertyMap
 {
 private:
+    
+    static const int TypePod = 0;
+    static const int TypeShared = 1;
+    static const int TypeWeak = 2;
+    
     class Entry {
     public:
+        uint32_t type_ = 0;
         HackStdShared<ObjectBase> sp;
+        
         INL Entry()
             : sp(nullptr,nullptr)
         {}
         INL Entry(Entry &&e)
-            : sp(std::move(e.sp)) {
+            : sp(std::move(e.sp))
+        {
+            type_ = e.type_;
+            e.type_ = TypePod;
         }
         INL Entry &operator=(Entry &&e) {
             void *oldCb = sp.cbPtr();
@@ -43,7 +61,13 @@ private:
         }
         template<class T>
         INL Entry(ObjectPtr<T> &op)
-            : sp(reinterpret_cast<ObjectBase *>(op.get()), HackStdShared<ObjectBase>::cbPtr(op))
+            : type_(TypeShared)
+            , sp(reinterpret_cast<ObjectBase *>(op.get()), HackStdShared<ObjectBase>::cbPtr(op))
+        {}
+        template<class T>
+        INL Entry(WeakPtr<T> &op)
+            : type_(TypeWeak)
+            , sp(reinterpret_cast<ObjectBase *>(op.get()), HackStdShared<ObjectBase>::cbPtr(op))
         {}
         ~Entry();
     };
@@ -53,7 +77,7 @@ private:
 public:
 
     template<class ObjT>
-    void setOwnedProperty(const TypedPropertyKey<ObjT> key, ObjectPtr<ObjT> value) {
+    void setSharedProperty(const TypedPropertyKey<ObjT> key, ObjectPtr<ObjT> value) {
         auto found = valuesByInt_.find(key.key_);
         void *oPtr = value.get();
         if(found == valuesByInt_.end()) {
