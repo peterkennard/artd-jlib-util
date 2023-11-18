@@ -110,7 +110,7 @@ public:
 
             while (!toRun.empty()) {
 
-                // TODO: this should handle exceptions 
+                // TODO: this should handle exceptions
                 // and deallocate and survive.
                 LambdaEvent* he = toRun.getHead();
                 if (!he) {
@@ -122,7 +122,7 @@ public:
                     doneWith.addTail(he);
                 }
             }
-            // release all the executed events inside a list lock 
+            // release all the executed events inside a list lock
             // schedule all the do-again events to be executed again.
             {
             synchronized(listLock_)
