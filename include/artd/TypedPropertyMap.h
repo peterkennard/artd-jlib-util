@@ -74,17 +74,10 @@ private:
         INL Entry &operator=(Entry &&e) {
             switch(getType()) {
                 case TypePod:
-                    this->~Entry();
-                    break;
                 case TypeShared:
-                case TypeWeak: {
-                    // TODO: make sure we don't add erroneous references
-                    void *oldCb = sp.cbPtr();
-                    if(oldCb != e.sp.cbPtr()) {
-                        this->~Entry();
-                    }
-                    break;
-                }
+                case TypeWeak:
+                    this->~Entry();
+                    new(this) Entry(std::move(e));
                 default:
                     break;
             }
