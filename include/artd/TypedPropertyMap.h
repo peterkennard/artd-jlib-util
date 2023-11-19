@@ -141,13 +141,24 @@ public:
             }
         }
     }
+
+    template<class PodT>
+    void setPodProperty(const TypedPropertyKey<PodT> key, PodT &&pod) {
+        auto found = valuesByInt_.find(key.key_);
+        if(found == valuesByInt_.end()) {
+            valuesByInt_.emplace(std::make_pair(key.key_, Entry(key.key_,std::move(pod))));
+        } else {
+            valuesByInt_[key.key_] = Entry(key.key_, std::move(pod));
+        }
+    }
+
     template<class PodT>
     void setPodProperty(const TypedPropertyKey<PodT> key, const PodT &pod) {
         auto found = valuesByInt_.find(key.key_);
         if(found == valuesByInt_.end()) {
             valuesByInt_.emplace(std::make_pair(key.key_, Entry(key.key_,pod)));
         } else {
-            valuesByInt_[key.key_] = Entry(key.key_, std::move(pod));
+            valuesByInt_[key.key_] = Entry(key.key_, pod);
         }
     }
 
