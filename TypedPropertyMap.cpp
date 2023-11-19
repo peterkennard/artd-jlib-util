@@ -100,6 +100,27 @@ DefaultKeyRegistrar::nameForKey(int key) {
     return(KeyRegistrarImpl::instance().nameForKey(key));
 }
 
+void
+TypedPropertyMap::_setSharedProperty_(uint32_t key, ObjectPtr<ObjectBase> &value) {
+   auto found = valuesByInt_.find(key);
+    void *oPtr = value.get();
+    if(found == valuesByInt_.end()) {
+        // adding new item in the map.
+        if(oPtr) {
+            valuesByInt_.emplace(std::make_pair(key, Entry(key,value)));
+            ::new(&value) HackStdShared<ObjectBase>(nullptr,nullptr);  // clear so we leave input reference in map
+        }
+    } else {
+        // replace existing item in the map
+        if(oPtr) {
+            valuesByInt_[key] = Entry(key,value);
+            ::new(&value) HackStdShared<ObjectBase>(nullptr,nullptr);  // clear so we leave input reference in map
+        } else {
+            valuesByInt_.erase(key);
+        }
+    }
+}
+
 TypedPropertyMap::Entry::~Entry() {
     switch(getType()) {
         case TypeUninitialized:

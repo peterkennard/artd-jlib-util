@@ -70,6 +70,7 @@ private:
         INL uint32_t getIntKey() {
             return(typeKey_ >> 3);
         }
+
         INL Entry &operator=(Entry &&e) {
             switch(getType()) {
                 case TypePod:
@@ -89,6 +90,7 @@ private:
             }
             return(*this);
         }
+
         template<class T>
         INL Entry(uint32_t intKey, ObjectPtr<T> &op)
             : typeKey_((intKey << 3) | TypeShared)
@@ -107,12 +109,6 @@ private:
         {
             if(sizeof(T) <= sizeof(sp)) {
                 ::new((void *)&sp) T(std::move(op));
-                
-//                if(getType() == TypePod) { // std::is_trivially_destructible<T>::value) {
-//                    ::new((void *)&sp) T(std::move(op));
-//                } else {
-//                    ::new((void *)&sp) T(std::move(op)); // )(*reinterpret_cast<T*>(&sp) = op;
-//                }
             } else {
                 new((void *)this) Entry();
             }
@@ -132,27 +128,15 @@ private:
 
     typedef std::unordered_map<int,Entry> MapT;
     MapT valuesByInt_;
+
+    // NOTE: this will std::move the value into the map !!!
+    // SO Do not use this except when you want that !!
+    void _setSharedProperty_(uint32_t key, ObjectPtr<ObjectBase> &value);
 public:
 
     template<class ObjT>
-    void setSharedProperty(const TypedPropertyKey<ObjT> key, ObjectPtr<ObjT> value) {
-        auto found = valuesByInt_.find(key.key_);
-        void *oPtr = value.get();
-        if(found == valuesByInt_.end()) {
-            // adding new item in the map.
-            if(oPtr) {
-                valuesByInt_.emplace(std::make_pair(key.key_, Entry(key.key_,value))); // insert({ key.key_, Entry(value) } );
-                ::new(&value) HackStdShared<ObjT>(nullptr,nullptr);  // clear so we leave input reference in map
-            }
-        } else {
-            // replace existing item in the map
-            if(oPtr) {
-                valuesByInt_[key.key_] = Entry(key.key_,value);
-                ::new(&value) HackStdShared<ObjT>(nullptr,nullptr);  // clear so we leave input reference in map
-            } else {
-                valuesByInt_.erase(key.key_);
-            }
-        }
+    INL void setSharedProperty(const TypedPropertyKey<ObjT> key, ObjectPtr<ObjT> value) {
+        _setSharedProperty_(key.key_, *reinterpret_cast<ObjectPtr<ObjectBase> *>(&value));
     }
 
     template<class PodT>
@@ -179,6 +163,22 @@ public:
             valuesByInt_[key.key_] = Entry(key.key_, pod);
         }
     }
+
+    template<class PodT>
+    INL void setProperty(const TypedPropertyKey<PodT> &key, const PodT &pod) {
+        setPodProperty(key,pod);
+    }
+
+    template<class PodT>
+    INL void setProperty(const TypedPropertyKey<PodT> &key, PodT &&pod) {
+        setPodProperty(key,std::move(pod));
+    }
+
+    template<class PropT>
+    INL void setProperty(const TypedPropertyKey<PropT> &key, ObjectPtr<PropT> &prop) {
+        setSharedProperty(key,prop);
+    }
+
     template<class PropT>
     PropT *getProperty(const TypedPropertyKey<PropT> &key) {
         auto found = valuesByInt_.find(key.key_);
