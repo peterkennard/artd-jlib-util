@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include "artd/Logger.h"
+#include "artd/RcString.h"
 
 ARTD_BEGIN
 
@@ -17,34 +18,33 @@ public:
     
     typedef DefaultKeyRegistrar::PodDeleter PodDeleter;
 
-    class Entry;
+    class RegEntry;
     
-    typedef std::unordered_map<int32_t, Entry> InvMap;
-    typedef std::map<std::string, const InvMap::iterator &> MapT;
+    typedef std::unordered_map<int32_t, RegEntry> InvMap;
+    typedef std::map<RcString, int32_t> MapT;
     
-    class Entry {
+    class RegEntry {
     public:
-        Entry(int32_t key, PodDeleter pd)
+        RegEntry(int32_t key, const char *name, PodDeleter pd)
             : keyInt_(key)
+            , name_(name)
             , pd_(pd)
         {}
         
-        const MapT::iterator *MapIt_;
+        const MapT::iterator *MapIt_ = nullptr;
 
-//        void setMapTIterator(const MapT::iterator &it) {
-//            MapIt_ = &it;
-//        }
-        const char *getName() const {
-            return("name");
+        
+        const char *getName() {
+            return(name_);
+            return("it == null");
         }
         int32_t keyInt_;
-        
+        const char *name_;
         PodDeleter pd_;
     };
 
     
-    
-    MapT registered_;
+    MapT   keyByString_;
     InvMap byKey_;
     
     static KeyRegistrarImpl &instance() {
@@ -52,28 +52,24 @@ public:
         return(i);
     }
     uint32_t registerKey(StringArg key, PodDeleter pd) {
-        std::string ss = key.c_str();
-
-        // TODO: maybe inverse map shoudl be actual entry, and restered_ only the rteference.
         
-        auto found = registered_.find(ss);
-        if(found != registered_.end()) {
+        RcString keyStr(key);
+
+        auto found = keyByString_.find(keyStr);
+        if(found != keyByString_.end()) {
             AD_LOG(error) << "Key for \"" << key << "\" already registerd";
             return;
         }
         ++lastId_;
-        auto ret = byKey_.emplace(lastId_,Entry(lastId_, pd));
-        const InvMap::iterator &newEntry = ret.first;
-        // AD_LOG(print) << "new key: " << newEntry->first << " entry: " << newEntry->second.keyInt_;
+        keyByString_.emplace(keyStr, lastId_);
 
-        auto ret2 = registered_.emplace(ss,newEntry);
-        const MapT::iterator &newEntry2 = ret2.first;
+        auto ret = byKey_.emplace(lastId_,RegEntry(lastId_, keyStr.c_str(), pd));
 
-    //    newEntry->second.setRegisteredEntry(newEntry2);
+        RegEntry &entry  = ret.first->second;
         
-        auto found2 = byKey_.find(lastId_);
+        AD_LOG(print) << " registered key: " <<  entry.getName() << " at: " << entry.keyInt_ << " pd: " << (void *)pd;
 
-        return(found2->second.keyInt_);
+        return(entry.keyInt_);
     }
     INL const char *nameForKey(int key) {
         auto found = byKey_.find(key);
@@ -83,10 +79,10 @@ public:
         return("Key not found!");
     }
     
-    INL const Entry *getEntryForKey(uint32_t key) {
+    INL const RegEntry *getEntryForKey(uint32_t key) {
         auto found = byKey_.find(key);
         if(found != byKey_.end()) {
-            return(&found->second);
+            return(&(found->second));
         }
         return(nullptr);
     }
@@ -112,9 +108,10 @@ TypedPropertyMap::Entry::~Entry() {
             break;
         case TypePod: {
             uint32_t iKey = getIntKey();
-            auto *entry = KeyRegistrarImpl::instance().getEntryForKey(iKey);
-            if(entry) {
-                entry->pd_(&this->sp);
+            auto pEntry = KeyRegistrarImpl::instance().getEntryForKey(iKey);
+            if(pEntry) {
+                AD_LOG(print) << "###### pd: " << (void*)(pEntry->pd_) << " deleting for: " << pEntry->name_;
+                pEntry->pd_(&this->sp);
             }
             break;
         }
@@ -179,7 +176,7 @@ void callFn(std::function<void()> f) {
 void
 TypedPropertyMap::test() {
 
-    AD_LOG(print) << "vec size " << sizeof(std::vector<void *>);
+//    AD_LOG(print) << "vec size " << sizeof(std::vector<void *>);
     
 //    int valtest5 = 99;
 //

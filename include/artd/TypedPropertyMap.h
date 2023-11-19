@@ -71,11 +71,22 @@ private:
             return(typeKey_ >> 3);
         }
         INL Entry &operator=(Entry &&e) {
-            void *oldCb = sp.cbPtr();
-            if(oldCb != e.sp.cbPtr()) {
-                this->~Entry();
+            switch(getType()) {
+                case TypePod:
+                    this->~Entry();
+                    break;
+                case TypeShared:
+                case TypeWeak: {
+                    // TODO: make sure we don't add erroneous references
+                    void *oldCb = sp.cbPtr();
+                    if(oldCb != e.sp.cbPtr()) {
+                        this->~Entry();
+                    }
+                    break;
+                }
+                default:
+                    break;
             }
-            ::new(this) Entry(std::move(e));
             return(*this);
         }
         template<class T>
@@ -95,11 +106,13 @@ private:
             : typeKey_((intKey << 3) | (std::is_trivially_destructible<T>::value ? TypeTrivialPod : TypePod))
         {
             if(sizeof(T) <= sizeof(sp)) {
-                if(getType() == TypePod) { // std::is_trivially_destructible<T>::value) {
-                    ::new((void *)&sp) T(std::move(op));
-                } else {
-                    ::new((void *)&sp) T(op); // )(*reinterpret_cast<T*>(&sp) = op;
-                }
+                ::new((void *)&sp) T(std::move(op));
+                
+//                if(getType() == TypePod) { // std::is_trivially_destructible<T>::value) {
+//                    ::new((void *)&sp) T(std::move(op));
+//                } else {
+//                    ::new((void *)&sp) T(std::move(op)); // )(*reinterpret_cast<T*>(&sp) = op;
+//                }
             } else {
                 new((void *)this) Entry();
             }
@@ -143,17 +156,22 @@ public:
     }
 
     template<class PodT>
-    void setPodProperty(const TypedPropertyKey<PodT> key, PodT &&pod) {
+    void setPodProperty(const TypedPropertyKey<PodT> &key, PodT &&pod) {
         auto found = valuesByInt_.find(key.key_);
         if(found == valuesByInt_.end()) {
             valuesByInt_.emplace(std::make_pair(key.key_, Entry(key.key_,std::move(pod))));
         } else {
-            valuesByInt_[key.key_] = Entry(key.key_, std::move(pod));
+            valuesByInt_[key.key_] = std::move(Entry(key.key_, std::move(pod)));
         }
     }
 
+    template<class PropT>
+    bool hasProperty(const TypedPropertyKey<PropT> &key) {
+        return(valuesByInt_.find(key.key_) != valuesByInt_.end());
+    }
+
     template<class PodT>
-    void setPodProperty(const TypedPropertyKey<PodT> key, const PodT &pod) {
+    void setPodProperty(const TypedPropertyKey<PodT> &key, const PodT &pod) {
         auto found = valuesByInt_.find(key.key_);
         if(found == valuesByInt_.end()) {
             valuesByInt_.emplace(std::make_pair(key.key_, Entry(key.key_,pod)));
