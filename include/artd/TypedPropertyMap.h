@@ -179,8 +179,25 @@ public:
             valuesByInt_[key.key_] = Entry(key.key_, pod);
         }
     }
-
-
+    template<class PropT>
+    PropT *getProperty(const TypedPropertyKey<PropT> &key) {
+        auto found = valuesByInt_.find(key.key_);
+        if(found != valuesByInt_.end()) {
+            switch(found->second.getType()) {
+                case TypeUninitialized:
+                    break;
+                case TypeTrivialPod:
+                case TypePod:
+                   return(reinterpret_cast<PropT*>(&(found->second.sp)));
+                case TypeShared:
+                case TypeWeak:
+                   return(reinterpret_cast<PropT*>(found->second.sp.objPtr().get()));
+                default:
+                    break;
+            }
+        }
+        return(nullptr);
+    }
     static void test();
 };
 
