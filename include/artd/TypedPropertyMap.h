@@ -88,6 +88,8 @@ private:
             : typeKey_((intKey << 3) | TypeWeak)
             , sp(reinterpret_cast<ObjectBase *>(op.get()), HackStdShared<ObjectBase>::cbPtr(op))
         {}
+
+        // TODO: this could be cleaner
         template<class T>
         INL Entry(uint32_t intKey, T &&op)
             : typeKey_((intKey << 3) | (std::is_trivially_destructible<T>::value ? TypeTrivialPod : TypePod))
@@ -98,9 +100,19 @@ private:
                 } else {
                     ::new((void *)&sp) T(op); // )(*reinterpret_cast<T*>(&sp) = op;
                 }
+            } else {
+                new((void *)this) Entry();
             }
-            
-            AD_LOG(print) << (void*)&op;
+        }
+        template<class T>
+        INL Entry(uint32_t intKey, const T &op)
+            : typeKey_((intKey << 3) | (std::is_trivially_destructible<T>::value ? TypeTrivialPod : TypePod))
+        {
+            if(sizeof(T) <= sizeof(sp)) {
+                ::new((void *)&sp) T(op); // )(*reinterpret_cast<T*>(&sp) = op;
+            } else {
+                new((void *)this) Entry();
+            }
         }
         ~Entry();
     };
@@ -130,14 +142,16 @@ public:
         }
     }
     template<class PodT>
-    void setPodProperty(const TypedPropertyKey<PodT> key, PodT &&pod) {
+    void setPodProperty(const TypedPropertyKey<PodT> key, const PodT &pod) {
         auto found = valuesByInt_.find(key.key_);
         if(found == valuesByInt_.end()) {
-            valuesByInt_.emplace(std::make_pair(key.key_, Entry(key.key_,std::move(pod))));
+            valuesByInt_.emplace(std::make_pair(key.key_, Entry(key.key_,pod)));
         } else {
             valuesByInt_[key.key_] = Entry(key.key_, std::move(pod));
         }
     }
+
+
     static void test();
 };
 

@@ -214,9 +214,13 @@ TypedPropertyMap::test() {
     map.setSharedProperty(key1,tO2);  // replace object
 
     map.setPodProperty(key1, TestObject("Pod Test Object"));
-
-    map.setPodProperty(key3,simple());
     
+    simple sim;
+    sim.a = 2.2;
+    
+    map.setPodProperty(key3,sim);
+    
+    AD_LOG(print) << sim.a;
     return;
 };
 
