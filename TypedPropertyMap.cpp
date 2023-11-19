@@ -82,6 +82,14 @@ public:
         }
         return("Key not found!");
     }
+    
+    INL const Entry *getEntryForKey(uint32_t key) {
+        auto found = byKey_.find(key);
+        if(found != byKey_.end()) {
+            return(&found->second);
+        }
+        return(nullptr);
+    }
 };
 
 } // end namespace
@@ -102,8 +110,10 @@ TypedPropertyMap::Entry::~Entry() {
             break;
         case TypePod: {
             uint32_t iKey = getIntKey();
-            AD_LOG(print) << "######### try to delete pod deleter: " << iKey;
-            //            pd(&sp);
+            auto *entry = KeyRegistrarImpl::instance().getEntryForKey(iKey);
+            if(entry) {
+                entry->pd_(&this->sp);
+            }
             break;
         }
         case TypeShared:
