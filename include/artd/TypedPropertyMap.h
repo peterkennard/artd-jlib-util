@@ -2,6 +2,7 @@
 
 #include "artd/jlib_util.h"
 #include "artd/ObjectBase.h"
+#include <type_traits>
 #include <unordered_map>
 #include "artd/StringArg.h"
 #include "artd/Logger.h"
@@ -42,11 +43,14 @@ public:
 class ARTD_API_JLIB_UTIL TypedPropertyMap
 {
 private:
-    static const int TypeUninitialized = 0;
-    static const int TypePod = 1;
-    static const int TypeShared = 2;
-    static const int TypeWeak = 3;
     
+    static const int TypeUninitialized = 0;
+    static const int TypeTrivialPod = 1;
+    static const int TypePod = 2;  // has empty destructor
+    static const int TypeShared = 3;
+    static const int TypeWeak = 4;
+ 
+
     class Entry {
     public:
         uint32_t typeKey_ = 0;
@@ -86,11 +90,17 @@ private:
         {}
         template<class T>
         INL Entry(uint32_t intKey, T &&op)
-            : typeKey_((intKey << 3) | TypePod)
+            : typeKey_((intKey << 3) | (std::is_trivially_destructible<T>::value ? TypeTrivialPod : TypePod))
         {
             if(sizeof(T) <= sizeof(sp)) {
-                new((void *)&sp) T(std::move(op));
+                if(getType() == TypePod) { // std::is_trivially_destructible<T>::value) {
+                    ::new((void *)&sp) T(std::move(op));
+                } else {
+                    ::new((void *)&sp) T(op); // )(*reinterpret_cast<T*>(&sp) = op;
+                }
             }
+            
+            AD_LOG(print) << (void*)&op;
         }
         ~Entry();
     };

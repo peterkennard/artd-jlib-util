@@ -31,9 +31,9 @@ public:
         
         const MapT::iterator *MapIt_;
 
-        void setMapTIterator(const MapT::iterator &it) {
-            MapIt_ = &it;
-        }
+//        void setMapTIterator(const MapT::iterator &it) {
+//            MapIt_ = &it;
+//        }
         const char *getName() const {
             return("name");
         }
@@ -108,6 +108,8 @@ TypedPropertyMap::Entry::~Entry() {
     switch(getType()) {
         case TypeUninitialized:
             break;
+        case TypeTrivialPod:  // do nothing
+            break;
         case TypePod: {
             uint32_t iKey = getIntKey();
             auto *entry = KeyRegistrarImpl::instance().getEntryForKey(iKey);
@@ -134,7 +136,6 @@ public:
 };
 
 class TestObject
-//    : public ObjectBase
 {
 public:
     
@@ -148,15 +149,20 @@ public:
     {
         from.name_ = "Moved Out";
     }
-    
-    //    void onObjectCreated() {
-//        AD_LOG(info) << "created " << name_;
-//    }
+    TestObject(const TestObject &other)
+        : name_(other.name_)
+    {
+    }
     
     ~TestObject() {
         AD_LOG(info) << "destroyed " << name_;
     }
 };
+
+struct simple {
+    float a = 1.1;
+};
+
 
 const TypedPropertyKey<Foo> TestObject::fooKey("foo");
 
@@ -196,6 +202,7 @@ TypedPropertyMap::test() {
 
     TypedPropertyKey<TestObject> key1("key1");
     TypedPropertyKey<TestObject> key2("key2");
+    TypedPropertyKey<simple> key3("Simple");
 
     TypedPropertyMap map;
 
@@ -208,6 +215,7 @@ TypedPropertyMap::test() {
 
     map.setPodProperty(key1, TestObject("Pod Test Object"));
 
+    map.setPodProperty(key3,simple());
     
     return;
 };
