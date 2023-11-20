@@ -45,11 +45,10 @@ class ARTD_API_JLIB_UTIL TypedPropertyMap
 private:
     
     static const int TypeUninitialized = 0;
-    static const int TypeTrivialPod = 1;
-    static const int TypePod = 2;  // has empty destructor
-    static const int TypeShared = 3;
-    static const int TypeWeak = 4;
- 
+    static const int TypeTrivialPod = 1; // no destructor
+    static const int TypePod = 2;  // has a destructor
+    static const int TypeShared = 3;  // dereference destructor
+    static const int TypeWeak = 4;    // weak dereference destructor
 
     class Entry {
     public:
@@ -73,10 +72,13 @@ private:
 
         INL Entry &operator=(Entry &&e) {
             switch(getType()) {
+                case TypeTrivialPod:
+                    goto moveIt;
                 case TypePod:
                 case TypeShared:
                 case TypeWeak:
                     this->~Entry();
+                moveIt:
                     new(this) Entry(std::move(e));
                 default:
                     break;

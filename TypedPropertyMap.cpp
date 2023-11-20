@@ -131,7 +131,7 @@ TypedPropertyMap::Entry::~Entry() {
             uint32_t iKey = getIntKey();
             auto pEntry = KeyRegistrarImpl::instance().getEntryForKey(iKey);
             if(pEntry) {
-                AD_LOG(print) << "###### pd: " << (void*)(pEntry->pd_) << " deleting for: " << pEntry->name_;
+                // AD_LOG(print) << "###### pd: " << (void*)(pEntry->pd_) << " deleting for: " << pEntry->name_;
                 pEntry->pd_(&this->sp);
             }
             break;
