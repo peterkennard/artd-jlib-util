@@ -86,7 +86,7 @@ private:
 
 public:
 
-    LambdaEventQueue() : eventCache_(ObjectBase::make<LambdaEventPool>()) {
+    LambdaEventQueue() : eventCache_(ObjectPtr<LambdaEventPool>::make()) {
     }
 
     LambdaEventQueue(ObjectPtr<LambdaEventPool> cache) : eventCache_(std::move(cache)) {

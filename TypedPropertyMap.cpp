@@ -224,8 +224,8 @@ TypedPropertyMap::test() {
 
     TypedPropertyMap map;
 
-    ObjectPtr<TestObject> tO1 = ObjectBase::make<TestObject>("TestObject1");
-    ObjectPtr<TestObject> tO2 = ObjectBase::make<TestObject>("TestObject2");
+    ObjectPtr<TestObject> tO1 = ObjectPtr<TestObject>::make("TestObject1");
+    ObjectPtr<TestObject> tO2 = ObjectPtr<TestObject>::make("TestObject2");
     
     map.setSharedProperty(key1,tO1);
     tO1 = nullptr;
