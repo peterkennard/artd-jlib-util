@@ -5,6 +5,7 @@
 #include "artd/Logger.h"
 #include "artd/RcString.h"
 
+
 ARTD_BEGIN
 
 #define INL ARTD_ALWAYS_INLINE
